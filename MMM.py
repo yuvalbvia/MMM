@@ -7,9 +7,9 @@ class MMM:
 
     def __init__(self, e_matrix, data, pi=None):
         self.e_matrix = e_matrix
-        self.data = clean_data(data)
+        self.data = get_clean_data(data)
         self.pi = pi
-        self.mutation_counts = get_mutation_counts(data) #Bj
+        self.mutation_counts = get_mutation_count_dict(data)  # Bj vector
 
     def get_random_signature_probs(self):
         sigs = 12*[0]
@@ -23,25 +23,10 @@ class MMM:
 
         return sigs
 
-
-    def get_mutation_count_dict(self):
-        mutations = dict()
-        for i in self.data.keys():
-            for j in self.data[i]:
-                for k in self.data[i][j]:
-                    if k in mutations.keys():
-                        mutations[k]+=1
-                    else:
-                        mutations[k]=1
-        return mutations
-
-    def clean_data(self): #removes "Sequence" from the input
-        for i in self.data.keys():
-            for j in self.data[i]:
-                self.data[i][j]= self.data[i][j]["Sequence"]
-
-    def expectation(self):
-        pass
+    def expectation(self, signature_num, mutation_num):
+        mutation_count = self.mutation_counts[mutation_num]
+        signature_prob = self.get_signature_prob_given_mutation(signature_num, mutation_count)
+        return mutation_count * signature_prob
 
     def maximization(self, i):
         Ai = self.Ai_calculate(self, i)
@@ -69,25 +54,50 @@ class MMM:
     def likelihood(self):
         pass
 
-    def get_signature_prob_given_mutation(self, signature, mutation):
-        nominator = self.pi[signature] * self.e_matrix[signature][mutation]
+    def get_signature_prob_given_mutation(self, signature_num, mutation_num):
+        nominator = self.pi[signature_num] * self.e_matrix[signature_num][mutation_num]
+        denominator = self.prob_for_mutation(mutation_num)
+        result = nominator/denominator
+        return result
+
+    def prob_for_mutation(self, mutation_num):
+        ln_pi = np.log(self.pi)
+        ln_Ej = np.log(self.e_matrix[:, [mutation_num]])
+        sum_vector = ln_pi + ln_Ej
+        denominator = logsumexp(sum_vector)
+        return denominator
 
 
-def clean_data(data):
-    pass
+def get_clean_data(data):  # removes "Sequence" from the input
+    for i in data.keys():
+        for j in data[i]:
+            data[i][j] = data[i][j]["Sequence"]
+    return data
 
 
-def get_mutation_counts(data):
-    pass
+def get_mutation_count_dict(data):
+    mutations = dict()
+    for i in data.keys():
+        for j in data[i]:
+            for k in data[i][j]:
+                if k in mutations.keys():
+                    mutations[k] += 1
+                else:
+                    mutations[k] = 1
+    return mutations
 
 
 if __name__ == '__main__':
-    sig_mat = np.load("data/BRCA-signatures.npy")
+    sig_mat = np.load("data/BRCA-signatures.npy")  # 12 by 96 matrix. 12 signatures by 96 mutations in each signature
     json_data = open("data/ICGC-BRCA.json").read()
     data = json.loads(json_data)  # dictionary with data as: sample: chromosome#: "sequence": list of mutation#s
 
-    MMM_instance = MMM(sig_mat, data)
-    MMM_instance.expectation()
-    MMM_instance.maximization()
+    a = np.arange(2)
+    print(a)
+    print(logsumexp(a))
+    #
+    # MMM_instance = MMM(sig_mat, data)
+    # MMM_instance.expectation()
+    # MMM_instance.maximization()
 
 
