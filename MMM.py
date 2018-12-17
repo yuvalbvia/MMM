@@ -3,12 +3,13 @@ import numpy as np
 from scipy.special import logsumexp
 
 
-
 class MMM:
 
-    sig_mat = np.load("data/BRCA-signatures.npy")
-    json_data = open("data/ICGC-BRCA.json").read()
-    data = json.loads(json_data)  # dictionary with data as: sample: chromosome#: "sequence": list of mutation#s
+    def __init__(self, e_matrix, data, pi=None):
+        self.e_matrix = e_matrix
+        self.data = clean_data(data)
+        self.pi = pi
+        self.mutation_counts = get_mutation_counts(data) #Bj
 
     def get_random_signature_probs(self):
         sigs = 12*[0]
@@ -62,11 +63,31 @@ class MMM:
             prob_for_mutation(self,x[t])
         return sum
 
-    def fit(data, threshold, max_iterations):
+    def fit(self, threshold, max_iterations):
         pass
 
-    def likelihood(data):
+    def likelihood(self):
         pass
 
+    def get_signature_prob_given_mutation(self, signature, mutation):
+        nominator = self.pi[signature] * self.e_matrix[signature][mutation]
+
+
+def clean_data(data):
+    pass
+
+
+def get_mutation_counts(data):
+    pass
+
+
+if __name__ == '__main__':
+    sig_mat = np.load("data/BRCA-signatures.npy")
+    json_data = open("data/ICGC-BRCA.json").read()
+    data = json.loads(json_data)  # dictionary with data as: sample: chromosome#: "sequence": list of mutation#s
+
+    MMM_instance = MMM(sig_mat, data)
+    MMM_instance.expectation()
+    MMM_instance.maximization()
 
 
