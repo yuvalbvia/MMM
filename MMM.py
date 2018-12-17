@@ -4,8 +4,9 @@ import numpy as np
 
 class MMM:
 
-    sig_mat = np.load("/Users/yuvalbarzam/Documents/TAU/Sadna/data/BRCA-signatures.npy")
-    json_data = open("/Users/yuvalbarzam/Documents/TAU/Sadna/data/ICGC-BRCA.json").read()
+    print("hi")
+    sig_mat = np.load("/Users/sharonz/Downloads/data/BRCA-signatures.npy")
+    json_data = open("/Users/sharonz/Downloads/data/ICGC-BRCA.json").read()
     data = json.loads(json_data)  # dictionary with data as: sample: chromosome#: "sequence": list of mutation#s
 
 
