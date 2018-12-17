@@ -5,8 +5,8 @@ from scipy.special import logsumexp
 
 class MMM:
 
-    sig_mat = np.load("/Users/sharonz/Downloads/data/BRCA-signatures.npy")
-    json_data = open("/Users/sharonz/Downloads/data/ICGC-BRCA.json").read()
+    sig_mat = np.load("data/BRCA-signatures.npy")
+    json_data = open("data/ICGC-BRCA.json").read()
     data = json.loads(json_data)  # dictionary with data as: sample: chromosome#: "sequence": list of mutation#s
 
 
@@ -35,10 +35,6 @@ class MMM:
         for t in range (0,x.len()):
             prob_for_mutation(self,x[t])
         return sum
-
-    def convergence(self,):
-        theta0=
-
 
     def fit(data, threshold, max_iterations):
         pass
