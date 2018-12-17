@@ -1,8 +1,26 @@
+import json
+import numpy as np
 
-def fit(data, threshold, max_iterations):
-    pass
+
+class MMM:
+
+    sig_mat = np.load("/Users/yuvalbarzam/Documents/TAU/Sadna/data/BRCA-signatures.npy")
+    json_data = open("/Users/yuvalbarzam/Documents/TAU/Sadna/data/ICGC-BRCA.json").read()
+    data = json.loads(json_data)  # dictionary with data as: sample: chromosome#: "sequence": list of mutation#s
 
 
-def likelihood(data):
-    pass
+    def __init__(self, eMat, pi=None):
+        pass
+
+    def expectation(self):
+        pass
+
+    def maximization(self):
+        pass
+
+    def fit(data, threshold, max_iterations):
+        pass
+
+    def likelihood(data):
+        pass
 
