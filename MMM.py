@@ -9,6 +9,19 @@ class MMM:
     json_data = open("data/ICGC-BRCA.json").read()
     data = json.loads(json_data)  # dictionary with data as: sample: chromosome#: "sequence": list of mutation#s
 
+    def get_random_signature_probs(self):
+        sigs = 12*[0]
+        for i in range(12):
+            sigs[i] = np.random.randint(0,100)
+
+        tmp = sum(sigs)
+
+        for i in range(12):
+            sigs[i] = sigs[i]/tmp
+
+        return sigs
+
+
     def get_mutation_count_dict(self):
         mutations = dict()
         for i in self.data.keys():
