@@ -10,7 +10,7 @@ class MMM:
         self.e_matrix = np.log(e_matrix)
         self.pi_0 = np.log(pi_0)
         self.data = get_clean_data(data)
-        self.mutation_counts = get_mutation_count_dict(self.data)  # Bj vector
+        self.mutation_counts = get_mutation_count_np_array(self.data)  # Bj vector
         self.threshold = threshold
 
     def expectation(self):
@@ -31,9 +31,8 @@ class MMM:
 
     def fit(self, threshold, max_iterations):
         k = 0
-        pi_0 = self.pi_0
-        pi_1 = pi_0
-        while k == 0 or (k < max_iterations and not self.is_converged(pi_1, pi_0, threshold)):
+        pi_1 = self.pi_0
+        while k == 0 or (k < max_iterations and not self.is_converged(pi_1, self.pi_0, threshold)):
             self.pi_0 = pi_1
             log_Emat = self.expectation()
             pi_1 = self.maximization(log_Emat)
@@ -46,7 +45,7 @@ class MMM:
 
     def log_likelihood(self, pi):   # x is the data["input"] - a vector of mutation numbers
         p_xy = pi + self.e_matrix.T
-        result = np.sum(logsumexp(p_xy, axis=1))
+        result = np.sum(logsumexp(p_xy, axis=1) * self.mutation_counts)
         return result
 
 
@@ -56,7 +55,7 @@ def get_clean_data(data):  # removes "Sequence" from the input
     return data
 
 
-def get_mutation_count_dict(data):
+def get_mutation_count_np_array(data):
     mutations = np.zeros(96)
     for i in range(len(data)):
         for j in data[i + 1]:
