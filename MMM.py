@@ -1,20 +1,17 @@
 import json
 import numpy as np
-from numpy import ma
 from scipy.special import logsumexp
 
 
 class MMM:
 
-    def __init__(self, e_matrix, data, pi_0):
+    def __init__(self, e_matrix, pi_0): # class has pi,e,threshold
         self.e_matrix = np.log(e_matrix)
         self.pi_0 = np.log(pi_0)
-        self.data = get_clean_data(data)
-        self.mutation_counts = get_mutation_count_np_array(self.data)  # Bj vector
         self.threshold = threshold
 
-    def expectation(self):
-        log_mut = np.log(self.mutation_counts)
+    def expectation(self, mutation_counts):
+        log_mut = np.log(mutation_counts)
         p_xy = self.pi_0 + self.e_matrix.T
         denominator = logsumexp(p_xy, axis=1)
         log_Emat = log_mut + p_xy.T - denominator
@@ -22,38 +19,39 @@ class MMM:
         expectation = (log_Emat, logA)
         return expectation
 
-    def maximization(self, expectation):
-        pi_1 = expectation[1] - logsumexp(expectation[1])
+    def maximization(self, expectation_res):
+        pi_1 = expectation_res[1] - logsumexp(expectation_res[1])
         return pi_1
 
     def get_logA(self, log_Emat):
         logA = logsumexp(log_Emat, axis=1)
         return logA
 
-    def fit(self, threshold, max_iterations):
+    def fit(self, threshold, max_iterations,data):
+        mutation_counts = get_mutation_count_np_array(data)
         k = 0
-        pi_1 = self.pi_0
-        while k == 0 or (k < max_iterations and not self.is_converged(pi_1, self.pi_0, threshold)):
+        expectation_res = self.expectation(mutation_counts)
+        pi_1 = self.maximization(expectation_res)
+        convergence = self.log_likelihood(pi_1 , mutation_counts) - self.log_likelihood(self.pi_0, mutation_counts)
+
+        while k < max_iterations and convergence >= threshold:
             self.pi_0 = pi_1
-            log_Emat = self.expectation()[0]
-            pi_1 = self.maximization(log_Emat)
+            expectation_res = self.expectation(mutation_counts)
+            pi_1 = self.maximization(expectation_res)
             k += 1
+            convergence = self.log_likelihood(pi_1, mutation_counts) - self.log_likelihood(self.pi_0, mutation_counts)
         self.pi_0 = pi_1
 
-    def is_converged(self, pi_1, pi_0, threshold):
-        convergence = self.log_likelihood(pi_1) - self.log_likelihood(pi_0)
-        return convergence < threshold
-
-    def log_likelihood(self, pi):   # x is the data["input"] - a vector of mutation numbers
+    def log_likelihood(self, pi, mutation_counts):   # x is the data["input"] - a vector of mutation numbers
         p_xy = pi + self.e_matrix.T
-        result = np.sum(logsumexp(p_xy, axis=1) * self.mutation_counts)
+        result = np.sum(logsumexp(p_xy, axis=1) * mutation_counts)
         return result
 
 
-def get_clean_data(data):  # removes "Sequence" from the input
-    for i in data.keys():
-        data[i] = data[i]["Sequence"]
-    return data
+def get_clean_data(raw_data):  # removes "Sequence" from the input
+    for i in raw_data.keys():
+        raw_data[i] = raw_data[i]["Sequence"]
+    return raw_data
 
 
 def get_mutation_count_np_array(data):
@@ -81,6 +79,7 @@ if __name__ == '__main__':
     sig_mat = np.load("data/BRCA-signatures.npy")  # 12 signatures by 96 mutations numpy matrix
     input = json.loads(open("data/example.json").read())['input']   # input vector of mutations appearances
     fixed_input = {1: {'Sequence': input}}
+    data = get_clean_data(fixed_input)
     initial_pi = json.loads(open("data/example.json").read())['initial_pi']
     threshold = 0.001
     max_iterations = 1000
@@ -88,7 +87,7 @@ if __name__ == '__main__':
     if not initial_pi:
         initial_pi = get_random_signature_probs()
 
-    MMM_instance = MMM(sig_mat, fixed_input, initial_pi)
-    MMM_instance.fit(threshold, max_iterations)
+    MMM_instance = MMM(sig_mat, initial_pi)
+    MMM_instance.fit(threshold, max_iterations,data)
     print(np.exp(MMM_instance.pi_0))  # print the new pi vector
 
