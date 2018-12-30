@@ -18,11 +18,12 @@ class MMM:
         p_xy = self.pi_0 + self.e_matrix.T
         denominator = logsumexp(p_xy, axis=1)
         log_Emat = log_mut + p_xy.T - denominator
-        return log_Emat
-
-    def maximization(self, log_Emat):
         logA = self.get_logA(log_Emat)
-        pi_1 = logA - logsumexp(logA)
+        expectation = (log_Emat, logA)
+        return expectation
+
+    def maximization(self, expectation):
+        pi_1 = expectation[1] - logsumexp(expectation[1])
         return pi_1
 
     def get_logA(self, log_Emat):
@@ -34,7 +35,7 @@ class MMM:
         pi_1 = self.pi_0
         while k == 0 or (k < max_iterations and not self.is_converged(pi_1, self.pi_0, threshold)):
             self.pi_0 = pi_1
-            log_Emat = self.expectation()
+            log_Emat = self.expectation()[0]
             pi_1 = self.maximization(log_Emat)
             k += 1
         self.pi_0 = pi_1
