@@ -67,7 +67,7 @@ def get_mutation_count_dict(data):
 def get_random_signature_probs():
     sigs = 12*[0]
     for i in range(12):
-        sigs[i] = np.random.randint(0,100)
+        sigs[i] = np.random.randint(1,100)
 
     tmp = sum(sigs)
 
