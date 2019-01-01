@@ -5,7 +5,7 @@ from scipy.special import logsumexp
 
 class MMM:
 
-    def __init__(self, e_matrix, pi_0): # class has pi,e,threshold
+    def __init__(self, e_matrix, pi_0, threshold):  # class has pi,e,threshold
         self.e_matrix = np.log(e_matrix)
         self.pi_0 = np.log(pi_0)
         self.threshold = threshold
@@ -15,7 +15,7 @@ class MMM:
         p_xy = self.pi_0 + self.e_matrix.T
         denominator = logsumexp(p_xy, axis=1)
         log_Emat = log_mut + p_xy.T - denominator
-        logA = self.get_logA(log_Emat)
+        logA = logsumexp(log_Emat, axis=1)
         expectation = (log_Emat, logA)
         return expectation
 
@@ -23,18 +23,14 @@ class MMM:
         pi_1 = expectation_res[1] - logsumexp(expectation_res[1])
         return pi_1
 
-    def get_logA(self, log_Emat):
-        logA = logsumexp(log_Emat, axis=1)
-        return logA
-
-    def fit(self, threshold, max_iterations,data):
-        mutation_counts = get_mutation_count_np_array(data)
+    def fit(self, max_iterations, data):
+        mutation_counts = self.get_mutation_count_np_array(data)
         k = 0
         expectation_res = self.expectation(mutation_counts)
         pi_1 = self.maximization(expectation_res)
-        convergence = self.log_likelihood(pi_1 , mutation_counts) - self.log_likelihood(self.pi_0, mutation_counts)
+        convergence = self.log_likelihood(pi_1, mutation_counts) - self.log_likelihood(self.pi_0, mutation_counts)
 
-        while k < max_iterations and convergence >= threshold:
+        while k < max_iterations and convergence >= self.threshold:
             self.pi_0 = pi_1
             expectation_res = self.expectation(mutation_counts)
             pi_1 = self.maximization(expectation_res)
@@ -47,6 +43,13 @@ class MMM:
         result = np.sum(logsumexp(p_xy, axis=1) * mutation_counts)
         return result
 
+    def get_mutation_count_np_array(self, data):
+        mutations = np.zeros(96)
+        for i in range(len(data)):
+            for j in data[i + 1]:
+                mutations[j] += 1
+        return mutations
+
 
 def get_clean_data(raw_data):  # removes "Sequence" from the input
     for i in raw_data.keys():
@@ -54,18 +57,10 @@ def get_clean_data(raw_data):  # removes "Sequence" from the input
     return raw_data
 
 
-def get_mutation_count_np_array(data):
-    mutations = np.zeros(96)
-    for i in range(len(data)):
-        for j in data[i + 1]:
-            mutations[j] += 1
-    return mutations
-
-
 def get_random_signature_probs():
     sigs = 12*[0]
     for i in range(12):
-        sigs[i] = np.random.randint(1,100)
+        sigs[i] = np.random.randint(1, 100)
 
     tmp = sum(sigs)
 
@@ -87,7 +82,7 @@ if __name__ == '__main__':
     if not initial_pi:
         initial_pi = get_random_signature_probs()
 
-    MMM_instance = MMM(sig_mat, initial_pi)
-    MMM_instance.fit(threshold, max_iterations,data)
+    MMM_instance = MMM(sig_mat, initial_pi, threshold)
+    MMM_instance.fit(max_iterations, data)
     print(np.exp(MMM_instance.pi_0))  # print the new pi vector
 
