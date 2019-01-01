@@ -1,4 +1,6 @@
 import json
+import time
+
 import numpy as np
 from scipy.special import logsumexp
 
@@ -45,8 +47,10 @@ class MMM_many:
 
     def fit_many(self, max_iter, data, normalize=False):
         mut_count_mat = self.get_muation_counts_matrix(data)
+        mut_count_mat_copy = mut_count_mat
         if normalize:
-            mut_count_mat /= mut_count_mat.sum(axis=1).T
+            mut_count_mat = mut_count_mat.T / mut_count_mat.sum(axis=1).T
+            mut_count_mat = mut_count_mat.T
         k = 0
         expectation_res = self.expectation_many(mut_count_mat)
         maximization_res = self.maximization_many(expectation_res, is_normalized=normalize)
@@ -54,15 +58,15 @@ class MMM_many:
         pi_matrix_1 = maximization_res[1]
 
         while k < max_iter:
+            t0 = time.time()
             print("iteration number: {!s}".format(k))
             if k == 100:
-                ll_0 = self.log_likelihood(self.pi__matrix_0, self.e_matrix_0, mut_count_mat, is_normalized=normalize)
-            elif k > 100:
-                ll_1 = self.log_likelihood(pi_matrix_1, e_matrix_1, mut_count_mat, is_normalized=normalize)
+                ll_0 = self.log_likelihood(self.pi__matrix_0, self.e_matrix_0, mut_count_mat_copy)
+            elif k >= 100:
+                ll_1 = self.log_likelihood(pi_matrix_1, e_matrix_1, mut_count_mat_copy)
                 convergence = ll_1 - ll_0
                 ll_0 = ll_1
                 if convergence < self.threshold:
-                    print(ll_1)
                     break
             self.pi__matrix_0 = pi_matrix_1
             self.e_matrix_0 = e_matrix_1
@@ -71,12 +75,12 @@ class MMM_many:
             e_matrix_1 = maximization_res[0]
             pi_matrix_1 = maximization_res[1]
             k += 1
+            t1 = time.time()
+            print("duration: {!s}".format(t1-t0))
         self.pi__matrix_0 = pi_matrix_1
         self.e_matrix_0 = e_matrix_1
 
-    def log_likelihood(self, pi_matrix, e_matrix, mut_count_matrix, is_normalized=False):
-        if is_normalized:
-            mut_count_matrix *= mut_count_matrix.sum(axis=1).T
+    def log_likelihood(self, pi_matrix, e_matrix, mut_count_matrix):
         sum_ll = 0
         for i in range(self.num_of_ppl):  # the length of pi_matrix
             MMM_i = MMM(np.exp(e_matrix), np.exp(pi_matrix), self.threshold)
@@ -134,6 +138,6 @@ if __name__ == '__main__':
     max_iterations = 1000
     threshold = 0.3
     MMM_instance = MMM_many(12, len(input), 96, Emat_probs, sigs_probs, threshold)
-    MMM_instance.fit_many(max_iterations, input, normalize=False)
+    MMM_instance.fit_many(max_iterations, input, normalize=True)
     result = np.exp(MMM_instance.pi__matrix_0)
     print(result)
