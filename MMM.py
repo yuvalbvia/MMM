@@ -28,14 +28,18 @@ class MMM:
         k = 0
         expectation_res = self.expectation(mutation_counts)
         pi_1 = self.maximization(expectation_res)
-        convergence = self.log_likelihood(pi_1, mutation_counts) - self.log_likelihood(self.pi_0, mutation_counts)
+        ll_pi_0 = self.log_likelihood(self.pi_0, mutation_counts)
+        ll_pi_1 = self.log_likelihood(pi_1, mutation_counts)
+        convergence = ll_pi_1 - ll_pi_0
 
         while k < max_iterations and convergence >= self.threshold:
             self.pi_0 = pi_1
+            ll_pi_0 = ll_pi_1
             expectation_res = self.expectation(mutation_counts)
             pi_1 = self.maximization(expectation_res)
             k += 1
-            convergence = self.log_likelihood(pi_1, mutation_counts) - self.log_likelihood(self.pi_0, mutation_counts)
+            ll_pi_1 = self.log_likelihood(pi_1, mutation_counts)
+            convergence = ll_pi_1 - ll_pi_0
         self.pi_0 = pi_1
 
     def log_likelihood(self, pi, mutation_counts):   # x is the data["input"] - a vector of mutation numbers
@@ -84,5 +88,6 @@ if __name__ == '__main__':
 
     MMM_instance = MMM(sig_mat, initial_pi, threshold)
     MMM_instance.fit(max_iterations, data)
-    print(np.exp(MMM_instance.pi_0))  # print the new pi vector
+    result = np.exp(MMM_instance.pi_0)
+    print(result)  # print the new pi vector
 
