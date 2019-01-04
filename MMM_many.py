@@ -1,5 +1,4 @@
 import json
-import time
 
 import numpy as np
 from scipy.special import logsumexp
@@ -47,7 +46,7 @@ class MMM_many:
 
     def fit_many(self, max_iter, data, normalize=False):
         mut_count_mat = self.get_muation_counts_matrix(data)
-        mut_count_mat_copy = mut_count_mat
+        mut_count_mat_copy = mut_count_mat.copy()
         if normalize:
             mut_count_mat = mut_count_mat.T / mut_count_mat.sum(axis=1).T
             mut_count_mat = mut_count_mat.T
@@ -58,8 +57,6 @@ class MMM_many:
         pi_matrix_1 = maximization_res[1]
 
         while k < max_iter:
-            t0 = time.time()
-            print("iteration number: {!s}".format(k))
             if k == 100:
                 ll_0 = self.log_likelihood(self.pi__matrix_0, self.e_matrix_0, mut_count_mat_copy)
             elif k >= 100:
@@ -75,16 +72,17 @@ class MMM_many:
             e_matrix_1 = maximization_res[0]
             pi_matrix_1 = maximization_res[1]
             k += 1
-            t1 = time.time()
-            print("duration: {!s}".format(t1-t0))
         self.pi__matrix_0 = pi_matrix_1
         self.e_matrix_0 = e_matrix_1
 
     def log_likelihood(self, pi_matrix, e_matrix, mut_count_matrix):
         sum_ll = 0
         for i in range(self.num_of_ppl):  # the length of pi_matrix
-            MMM_i = MMM(np.exp(e_matrix), np.exp(pi_matrix), self.threshold)
+            MMM_i = MMM(np.exp(e_matrix), np.exp(pi_matrix[i]), self.threshold)
             sum_ll += MMM_i.log_likelihood(pi_matrix[i], mut_count_matrix[i])
+        # to do - take a look if the following two lines are better than what we did
+        # tmp = np.dot(np.exp(pi_matrix), np.exp(e_matrix))
+        # sum_ll = np.sum(np.log(tmp) * mut_count_matrix)
         return sum_ll
 
     def get_mutation_count_np_array(self, data):
