@@ -56,14 +56,19 @@ class MMM_many:
         e_matrix_1 = maximization_res[0]
         pi_matrix_1 = maximization_res[1]
 
+        print("Starting fitting process:")
+
         while k < max_iter:
+            print("Iteration number:{!s}".format(k))
             if k == 100:
                 ll_0 = self.log_likelihood(self.pi__matrix_0, self.e_matrix_0, mut_count_mat_copy)
             elif k >= 100:
                 ll_1 = self.log_likelihood(pi_matrix_1, e_matrix_1, mut_count_mat_copy)
                 convergence = ll_1 - ll_0
+                print("Convergence:{!s}".format(convergence))
                 ll_0 = ll_1
                 if convergence < self.threshold:
+                    print("The final likelihood is:{!s}".format(ll_1))
                     break
             self.pi__matrix_0 = pi_matrix_1
             self.e_matrix_0 = e_matrix_1
@@ -81,8 +86,8 @@ class MMM_many:
             MMM_i = MMM(np.exp(e_matrix), np.exp(pi_matrix[i]), self.threshold)
             sum_ll += MMM_i.log_likelihood(pi_matrix[i], mut_count_matrix[i])
         # to do - take a look if the following two lines are better than what we did
-        # tmp = np.dot(np.exp(pi_matrix), np.exp(e_matrix))
-        # sum_ll = np.sum(np.log(tmp) * mut_count_matrix)
+        # tmp = np.dot(np.exp(pi_matrix), np.exp(e_matrix)) //the probability that the MMM of the ith person shows the jth mutation
+        # sum_ll = np.sum(np.log(tmp) * mut_count_matrix) // log(temp) = log likelihood
         return sum_ll
 
     def get_mutation_count_np_array(self, data):
