@@ -138,7 +138,7 @@ class MMM_convex:
                 new_chromosones_dict[int(i)] = raw_chromosomes_dict[i]["Sequence"]
         return new_chromosones_dict
 
-    def create_log_likelihood_per_person(self, pi_matrix, e_matrix, mut_count_matrix):
+    def get_log_likelihood_vector_per_person(self, pi_matrix, e_matrix, mut_count_matrix):
         likelihood_vector = []
         for i in range(self.num_of_ppl):  # the length of pi_matrix
             MMM_i = MMM(np.exp(e_matrix), np.exp(pi_matrix[i]), self.thresh)
@@ -191,7 +191,11 @@ if __name__ == '__main__':
     w2.close()
 
     mut_count_mat = MMM_instance.get_muation_counts_matrix(input)
-    likelihood_vector = MMM_instance.create_log_likelihood_per_person(MMM_instance.pi__matrix_0,
-                                                                      MMM_instance.e_matrix_0,
-                                                                      mut_count_mat)
-    print("The log likelihood vector per pereson is: {!s}".format(likelihood_vector))
+    likelihood_vector = MMM_instance.get_log_likelihood_vector_per_person(MMM_instance.pi__matrix_0,
+                                                                          MMM_instance.e_matrix_0,
+                                                                          mut_count_mat)
+    with open("MMM_convex_log_likelihood_per_person.csv", "w") as w3:
+        writer = csv.writer(w3, lineterminator='\n')
+        for ll in likelihood_vector:
+            writer.writerow([ll])
+    w3.close()

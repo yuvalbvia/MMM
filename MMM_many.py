@@ -1,3 +1,4 @@
+import csv
 import json
 
 import numpy as np
@@ -120,6 +121,14 @@ class MMM_many:
                 new_chromosones_dict[int(i)] = raw_chromosomes_dict[i]["Sequence"]
         return new_chromosones_dict
 
+    def get_log_likelihood_vector_per_person(self, pi_matrix, e_matrix, mut_count_matrix):
+        likelihood_vector = []
+        for i in range(self.num_of_ppl):  # the length of pi_matrix
+            MMM_i = MMM(np.exp(e_matrix), np.exp(pi_matrix[i]), self.threshold)
+            log_likelihood = MMM_i.log_likelihood(pi_matrix[i], mut_count_matrix[i])
+            likelihood_vector.append(log_likelihood)
+        return likelihood_vector
+
 
 def get_random_probs_mat(num_of_rows, num_of_cols):
     matrix = [num_of_cols * [0] for i in range(num_of_rows)]
@@ -142,5 +151,25 @@ if __name__ == '__main__':
     threshold = 0.3
     MMM_instance = MMM_many(12, len(input), 96, Emat_probs, sigs_probs, threshold)
     MMM_instance.fit_many(max_iterations, input, normalize=True)
-    result = np.exp(MMM_instance.pi__matrix_0)
-    print(result)
+    result_e = np.exp(MMM_instance.e_matrix_0)
+    result_pi = np.exp(MMM_instance.pi__matrix_0)
+    print("The new pi matrix is: {!s}".format(result_pi))
+    print("The new e matrix is: {!s}".format(result_e))
+
+    with open("MMM_pi_output.csv", "w") as w:
+        writer = csv.writer(w, lineterminator='\n')
+        writer.writerows(result_pi)
+    w.close()
+    with open("MMM_E_output.csv", "w") as w2:
+        writer = csv.writer(w2, lineterminator='\n')
+        writer.writerows(result_e)
+    w2.close()
+
+    mut_count_matrix = MMM_instance.get_muation_counts_matrix(input)
+    likelihood_vector = MMM_instance.get_log_likelihood_vector_per_person(MMM_instance.pi__matrix_0, MMM_instance.e_matrix_0, mut_count_matrix)
+
+    with open("MMM_log_likelihood_per_person.csv", "w") as w3:
+        writer = csv.writer(w3, lineterminator='\n')
+        for ll in likelihood_vector:
+            writer.writerow([ll])
+    w3.close()
