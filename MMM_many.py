@@ -93,9 +93,8 @@ class MMM_many:
 
     def get_mutation_count_np_array(self, data):
         mutations = np.zeros(self.num_of_mut)
-        for i in range(len(data)):
-            for j in data[i + 1]:
-                mutations[j] += 1
+        for mut in data:
+            mutations[mut] += 1
         return mutations
 
     def get_muation_counts_matrix(self, raw_data):
@@ -103,23 +102,11 @@ class MMM_many:
         mut_count_mat = np.zeros((len(raw_data), self.num_of_mut))
         j = 0
         for sample in raw_data.keys():
-            chromosomes_dict = raw_data[sample]
-            clean_chromosomes_dict = self.get_clean_chromosome_dict(chromosomes_dict)
-            mutation_counts = self.get_mutation_count_np_array(clean_chromosomes_dict)
+            chromosomes_list = raw_data[sample]
+            mutation_counts = self.get_mutation_count_np_array(chromosomes_list)
             mut_count_mat[j] = mutation_counts
             j += 1
         return mut_count_mat
-
-    def get_clean_chromosome_dict(self, raw_chromosomes_dict):
-        new_chromosones_dict = dict()
-        for i in raw_chromosomes_dict.keys():
-            if i == 'X':
-                new_chromosones_dict[21] = raw_chromosomes_dict[i]["Sequence"]
-            elif i == 'Y':
-                new_chromosones_dict[22] = raw_chromosomes_dict[i]["Sequence"]
-            else:
-                new_chromosones_dict[int(i)] = raw_chromosomes_dict[i]["Sequence"]
-        return new_chromosones_dict
 
     def get_log_likelihood_vector_per_person(self, pi_matrix, e_matrix, mut_count_matrix):
         likelihood_vector = []
@@ -141,35 +128,52 @@ def get_random_probs_mat(num_of_rows, num_of_cols):
     return matrix
 
 
-if __name__ == '__main__':
-    input = json.loads(open("data/ICGC-BRCA.json").read())
-    sigs_probs = get_random_probs_mat(len(input), 12)
+def run_MMM_with_cosmic(train, sigs_probs, max_iterations=10000, threshold=0.3):
     Emat_probs = np.load("data/BRCA-signatures.npy")
-    if Emat_probs.any() is None:
-        Emat_probs = get_random_probs_mat(12, 96)
-    max_iterations = 1000
-    threshold = 0.3
-    MMM_instance = MMM_many(12, len(input), 96, Emat_probs, sigs_probs, threshold)
-    MMM_instance.fit_many(max_iterations, input, normalize=True)
-    result_e = np.exp(MMM_instance.e_matrix_0)
-    result_pi = np.exp(MMM_instance.pi__matrix_0)
-    print("The new pi matrix is: {!s}".format(result_pi))
-    print("The new e matrix is: {!s}".format(result_e))
 
-    with open("MMM_pi_output.csv", "w") as w:
+    MMM_instance = MMM_many(12, len(train), 96, Emat_probs, sigs_probs, threshold)
+    MMM_instance.fit_many(max_iterations, train, normalize=True)
+
+    handle_MMM_result(MMM_instance, "cosmic_pi_output", "cosmic_E_output", "cosmic_log_likelihood_per_person")
+
+
+def run_MMM(train, sigs_probs, max_iterations=10000, threshold=0.3):
+    Emat_probs = get_random_probs_mat(12, 96)
+
+    MMM_instance = MMM_many(12, len(train), 96, Emat_probs, sigs_probs, threshold)
+    MMM_instance.fit_many(max_iterations, train, normalize=True)
+
+    handle_MMM_result(MMM_instance, "MMM_pi_output", "MMM_E_output", "MMM_log_likelihood_per_person")
+
+
+def handle_MMM_result(MMM_instance, pi_output_filename, E_output_filename, log_likelihood_filename):
+    result_pi = np.exp(MMM_instance.pi__matrix_0)
+    with open("{!s}.csv".format(pi_output_filename), "w") as w:
         writer = csv.writer(w, lineterminator='\n')
         writer.writerows(result_pi)
     w.close()
-    with open("MMM_E_output.csv", "w") as w2:
+
+    result_e = np.exp(MMM_instance.e_matrix_0)
+    with open("{!s}.csv".format(E_output_filename), "w") as w2:
         writer = csv.writer(w2, lineterminator='\n')
         writer.writerows(result_e)
     w2.close()
 
-    mut_count_matrix = MMM_instance.get_muation_counts_matrix(input)
-    likelihood_vector = MMM_instance.get_log_likelihood_vector_per_person(MMM_instance.pi__matrix_0, MMM_instance.e_matrix_0, mut_count_matrix)
+    test_data = json.loads(open("data/test_data.json").read())
+    mut_count_matrix = MMM_instance.get_muation_counts_matrix(test_data)
+    likelihood_vector = MMM_instance.get_log_likelihood_vector_per_person(MMM_instance.pi__matrix_0,
+                                                                          MMM_instance.e_matrix_0,
+                                                                          mut_count_matrix)
 
-    with open("MMM_log_likelihood_per_person.csv", "w") as w3:
+    with open("{!s}.csv".format(log_likelihood_filename), "w") as w3:
         writer = csv.writer(w3, lineterminator='\n')
         for ll in likelihood_vector:
             writer.writerow([ll])
     w3.close()
+
+
+if __name__ == '__main__':
+    train = json.loads(open("data/train_data.json").read())
+    sigs_probs = get_random_probs_mat(len(train), 12)
+    run_MMM(train, sigs_probs, 1000, 0.3)
+    run_MMM_with_cosmic(train, sigs_probs, 1000, 0.3)
