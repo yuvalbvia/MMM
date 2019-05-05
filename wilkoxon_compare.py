@@ -35,6 +35,9 @@ if __name__ == '__main__':
     w = get_wilcoxon_result(convex_file_path, signeR_file_path)
     print("Convex MMM and signeR: {}".format(w))
 
+    w = get_wilcoxon_result(MMM_file_path, convex_file_path)
+    print("Regular MMM and Convex MMM: {}".format(w))
+
     w = get_wilcoxon_result(cosmic_file_path, MMM_file_path)
     print("MMM with cosmic matrix and MMM with random matrix: {}".format(w))
 
