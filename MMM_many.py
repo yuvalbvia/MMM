@@ -175,5 +175,5 @@ def handle_MMM_result(MMM_instance, pi_output_filename, E_output_filename, log_l
 if __name__ == '__main__':
     train = json.loads(open("data/train_data.json").read())
     sigs_probs = get_random_probs_mat(len(train), 12)
-    run_MMM(train, sigs_probs, 1000, 0.3)
-    run_MMM_with_cosmic(train, sigs_probs, 1000, 0.3)
+    run_MMM(train, sigs_probs, 10000, 0.3)
+    run_MMM_with_cosmic(train, sigs_probs, 10000, 0.3)
